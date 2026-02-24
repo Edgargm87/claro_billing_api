@@ -18,6 +18,7 @@ RUN pip install --upgrade pip && \
 
 # Copy application files
 COPY ./app /app/app
+COPY ./files /app/files
 
 # Create a directory for temporary files
 RUN mkdir -p /tmp/facturas
