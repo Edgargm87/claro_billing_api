@@ -1,49 +1,41 @@
-# app/main.py
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import logging
 
 from app.api.v1.routes_health import router as health_router
 from app.api.v1.routes_auth import router as auth_router
-from app.db.init_db import init_db
-from app.middleware.error_handler import global_error_handler
+from app.api.v1.routes_facturas import router as facturas_router
+from app.middleware.error_handler import ErrorHandlingMiddleware
+from app.core.config import settings
 
-from app.api.v1 import __init__ as api_v1  # solo para que no quede "muerto" el paquete
+# Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="FastAPI Service Template")
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    version=settings.VERSION,
+    description="API para procesamiento de facturas Claro y generación de Excel"
+)
 
-    # Inicializar BD (crea tablas si no existen)
-    init_db()
+# Middleware for CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-    # Implementar CORS
-    if settings.cors_allow_origins == "*":
-        origins = ["*"]
-    else:
-        origins = [
-            o.strip()
-            for o in settings.cors_allow_origins.split(",")
-            if o.strip()
-        ]
+# Exception handling middleware
+app.add_middleware(ErrorHandlingMiddleware)
 
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],    # puedes restringir en prod si quieres
-        allow_headers=["*"],
-    )
+# Include routers
+app.include_router(health_router, prefix="/api/v1", tags=["Health"])
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Auth"])
+app.include_router(facturas_router, prefix="/api/v1/facturas", tags=["Facturas"])
 
-
-    # Middlewares
-    app.middleware("http")(global_error_handler)
-
-    # Routers
-    app.include_router(health_router, prefix="/api/v1")
-    app.include_router(auth_router, prefix="/api/v1")
-
-    return app
-
-
-app = create_app()
-
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)

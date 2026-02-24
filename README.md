@@ -1,70 +1,51 @@
-# FastAPI Service Template
+# Claro Billing API
 
-Este es un template base para crear servicios profesionales usando FastAPI. Incluye una arquitectura modular y configuraciones listas para producción.
+Esta es una API profesional desarrollada en FastAPI diseñada para procesar facturas electrónicas XML UBL de Claro y generar de forma automática la distribución contable en Excel.
 
-## Características
-
-- ⚡ **FastAPI**: Framework moderno y de alto rendimiento.
-- 🗄️ **SQLAlchemy**: ORM para bases de datos SQL.
-- 🔐 **Autenticación**: Estructura base para manejo de seguridad (JWT, etc).
-- 🏗️ **Arquitectura Modular**: Separación clara de responsabilitades (API, Core, Services, Schemas).
-- 🐳 **Docker**: Soporte básico para contenedores (si aplica).
-
-## Estructura del Proyecto
-
-El proyecto sigue una arquitectura por capas dentro del directorio `app/`:
-
-```
-app/
-├── api/          # Endpoints y rutas de la API (v1, routes, etc)
-├── core/         # Configuraciones generales, seguridad y utilidades base
-├── db/           # Configuración de base de datos y modelos base
-├── middleware/   # Middlewares para interceptar peticiones (CORS, logs, etc)
-├── models/       # Modelos de base de datos (SQLAlchemy)
-├── schemas/      # Esquemas de Pydantic para validación de datos
-├── services/     # Lógica de negocio separada de los endpoints
-└── main.py       # Punto de entrada de la aplicación
-```
+## Funcionalidades
+1. **Validación y Lectura de XML**: Procesa facturas UBL 2.1 e identifica valores totales y descripciones de conceptos definidos.
+2. **Motor de Distribución Contable**: Cruza los conceptos de la factura con una plantilla de distribución contable interna (basada en Excel).
+3. **Generación de Reporte (Excel)**: Genera y retorna un Excel validado con los valores distribuidos manteniendo las columnas iniciales y sumando la columna de distribución, totals y totales generales calculados dinámicamente.
 
 ## Requisitos Previos
 
-- Python 3.9+
-- pip
+- Python 3.11+
+- Docker (opcional, para despliegues con contenedor)
 
-## Instalación
+## Instalación y Configuración
 
-1. **Clonar el repositorio y entrar al directorio:**
-   ```bash
-   git clone <url-del-repo>
-   cd fastapi-service-template
-   ```
-
-2. **Crear un entorno virtual:**
-   ```bash
-   python -m venv .venv
-   source .venv/bin/activate  # En Windows: .venv\Scripts\activate
-   ```
-
-3. **Instalar dependencias:**
+1. **Instalar dependencias**:
    ```bash
    pip install -r requirements.txt
    ```
 
-4. **Configurar variables de entorno:**
-   Copia el archivo `.env` de ejemplo (si existe) o crea uno nuevo basándote en la configuración en `app/core/config.py`.
+2. **Ejecutar el servidor localmente**:
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
 
-## Ejecución
+3. **Ejecutar con Docker**:
+   ```bash
+   docker build -t claro-billing-api .
+   docker run -p 8000:8000 claro-billing-api
+   ```
 
-Para levantar el servidor de desarrollo:
+## Estructura del Proyecto
+El proyecto respeta estrictamente la siguiente estructura para separar los conceptos de dominio de la aplicación:
+- `app/api`: Definición de rutas o endpoints.
+- `app/core`: Configuración global y funciones de seguridad.
+- `app/db`: Configuración e inicialización de la base de datos (dummy en caso de no usar DB para procesamiento del excel).
+- `app/middleware`: Interceptores de la petición, enfocado en manejo de errores global.
+- `app/models`: Modelos de base de datos definidos.
+- `app/schemas`: Modelos de validación con Pydantic.
+- `app/services`: Lógica de negocio (procesamiento de facturas y excel).
 
-```bash
-uvicorn app.main:app --reload
-```
+## Endpoints Principales
 
-O usando el comando de fastapi si está disponible:
+- `GET /api/v1/health`
+- `GET /api/v1/ready`
+- `POST /api/v1/facturas/procesar`: Recibe una factura en XML `multipart/form-data` y lanza el procesamiento devolviendo un ZIP o retornando JSON en caso de error, dependiendo de lo implementado. El proceso distribuye según configuraciones de Plantilla.
 
-```bash
-fastapi dev app/main.py
-```
-
-La documentación interactiva estará disponible en: http://127.0.0.1:8000/docs
+## Estructura de Respuesta del Endpoint Procesar
+La carga esperada del endpoint de procesar es un archivo `xml`.
+Retorna un Excel y un Header/Respuesta con la cabecera correspondiente y metadata del estado o la descarga directa de un Excel procesado.
