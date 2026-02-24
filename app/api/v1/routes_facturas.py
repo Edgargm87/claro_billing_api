@@ -48,7 +48,7 @@ async def _process_file(file: UploadFile, format: str):
             "X-Resumen-Procesamiento": json.dumps(resumen)
         }
         
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S_%f")
         final_filename = f"Distribucion_{format.upper()}_{timestamp}.xlsx"
         
         return FileResponse(
