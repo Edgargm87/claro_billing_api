@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 from fastapi import APIRouter, File, UploadFile, HTTPException, Depends
 from fastapi.responses import FileResponse, JSONResponse
 from app.services.factura_service import FacturaService
@@ -47,10 +48,13 @@ async def _process_file(file: UploadFile, format: str):
             "X-Resumen-Procesamiento": json.dumps(resumen)
         }
         
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        final_filename = f"Distribucion_{format.upper()}_{timestamp}.xlsx"
+        
         return FileResponse(
             excel_path, 
             media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", 
-            filename=f"Distribucion_{format.upper()}.xlsx",
+            filename=final_filename,
             headers=headers
         )
 
